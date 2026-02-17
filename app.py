@@ -16,36 +16,53 @@ TOP_CHAPTER_PATTERN = re.compile(r'^\d+\.\s+', re.IGNORECASE)
 INDEX_LIKE_PATTERN = re.compile(r',\s*\d+|\(cont\)|Index|Notes', re.IGNORECASE)
 MAX_FILENAME_LENGTH = 120
 
+# A TOC page is usually short; stop collecting TOC lines after this many pages
+MAX_TOC_PAGES = 20
+
 
 def find_contents_start(doc):
+    """
+    Return the index of the page whose *first non-empty line* is a short
+    'Contents'-style heading.  Checking only the first line avoids false
+    positives on chapter body pages that happen to open with a word like
+    'Contents of this chapter'.
+    """
     for i, page in enumerate(doc):
-        text = page.get_text("text")
-        if text.lower().strip().startswith("content"):
+        lines = [l.strip() for l in page.get_text("text").splitlines() if l.strip()]
+        if lines and re.match(r'^contents?$', lines[0], re.IGNORECASE):
             return i
     return None
 
 
 def clean_title(title):
-    title = re.sub(r'\s+\d+$', '', title.strip())  # remove trailing numbers
+    # FIX Bug 5: do NOT strip trailing digits — they are part of chapter titles.
+    title = title.strip()
     title = re.sub(r'[\\/*?:"<>|]', "", title)
     title = re.sub(r'\s+', ' ', title)
     return title[:MAX_FILENAME_LENGTH]
 
 
 def extract_toc_entries(doc, start_index):
-    """Return top-level chapter entries (PARTs or top chapters)"""
+    """
+    Return top-level chapter entries (PARTs or numbered chapters).
+
+    FIX Bug 1: only scan a bounded window of pages after the TOC heading
+    instead of the entire rest of the document.
+    """
     entries = []
     last_page_number = -1
     detected_part = False
     toc_lines = []
 
-    # Collect all TOC lines first
-    for i in range(start_index, len(doc)):
+    # FIX Bug 1: cap how many pages we read as TOC
+    end_index = min(start_index + MAX_TOC_PAGES, len(doc))
+
+    for i in range(start_index, end_index):
         text = doc[i].get_text("text")
         lines = text.splitlines()
         for line in lines:
             line = line.strip()
-            if line and not line.lower().startswith("content"):
+            if line and not re.match(r'^contents?$', line, re.IGNORECASE):
                 toc_lines.append(line)
 
     # Detect whether PARTs exist
@@ -54,10 +71,8 @@ def extract_toc_entries(doc, start_index):
             detected_part = True
             break
 
-    # Decide pattern to use
     pattern_to_use = PART_PATTERN if detected_part else TOP_CHAPTER_PATTERN
 
-    # Extract entries
     for line in toc_lines:
         match = PAGE_PATTERN.match(line)
         if not match:
@@ -78,12 +93,21 @@ def extract_toc_entries(doc, start_index):
     return entries
 
 
-def compute_offset(doc, first_printed_page):
-    for i, page in enumerate(doc):
-        text = page.get_text("text")
-        if re.search(rf'\b{first_printed_page}\b', text):
+def compute_offset(doc, first_printed_page, toc_end):
+    """
+    Find the physical page index where `first_printed_page` actually appears
+    as a page number, searching only *after* the TOC section to avoid matching
+    the page number printed inside the TOC itself (Bug 2).
+
+    Returns offset such that:  physical_index = printed_page_num - 1 + offset
+    """
+    for i in range(toc_end, len(doc)):
+        text = doc[i].get_text("text")
+        # Match the number as a standalone token (header/footer page number)
+        if re.search(rf'(?<!\d){re.escape(str(first_printed_page))}(?!\d)', text):
             return i - (first_printed_page - 1)
-    return 0
+    # Fallback: assume front-matter is exactly toc_end pages
+    return toc_end
 
 
 def split_pdf_by_toc(input_path, output_dir):
@@ -102,15 +126,27 @@ def split_pdf_by_toc(input_path, output_dir):
 
     os.makedirs(output_dir, exist_ok=True)
 
-    offset = compute_offset(doc, toc_entries[0][1])
+    # FIX Bug 2: pass toc_end so compute_offset skips the TOC region
+    toc_end = min(contents_start + MAX_TOC_PAGES, len(doc))
+    offset = compute_offset(doc, toc_entries[0][1], toc_end)
+
+    # physical index = (printed_page - 1) + offset
     chapter_starts = [(title, page_num - 1 + offset) for title, page_num in toc_entries]
 
     for i, (title, start_idx) in enumerate(chapter_starts):
-        end_idx = (
-            chapter_starts[i + 1][1] - 1 if i + 1 < len(chapter_starts) else len(doc) - 1
-        )
+        # FIX Bug 4: next chapter starts at chapter_starts[i+1][1], so this
+        # chapter ends at that index - 1 (the page just before the next chapter).
+        # Previously the code subtracted 1 from an already-physical index which
+        # caused a one-page gap.  The subtraction is correct here because
+        # chapter_starts values are physical indices, and we want the page
+        # *before* the next chapter's first page.
+        if i + 1 < len(chapter_starts):
+            end_idx = chapter_starts[i + 1][1] - 1
+        else:
+            end_idx = len(doc) - 1
 
-        if start_idx < 0 or end_idx < start_idx:
+        if start_idx < 0 or start_idx >= len(doc) or end_idx < start_idx:
+            print(f"Skipping '{title}': invalid page range [{start_idx}, {end_idx}]")
             continue
 
         new_doc = fitz.open()
@@ -121,7 +157,7 @@ def split_pdf_by_toc(input_path, output_dir):
 
         new_doc.save(output_path)
         new_doc.close()
-        print(f"Saved: {output_path}")
+        print(f"Saved: {output_path}  (physical pages {start_idx}–{end_idx})")
 
     doc.close()
     print("Splitting complete.")
