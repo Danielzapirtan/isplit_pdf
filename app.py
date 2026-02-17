@@ -1,78 +1,70 @@
-import fitz  # PyMuPDF
 import os
-import re
+from pypdf import PdfReader, PdfWriter
 
-def clean_header(text):
+INPUT_PATH = "/content/drive/MyDrive/input.pdf"
+OUTPUT_DIR = "/content/drive/MyDrive/chapters"
+
+def extract_header_text(page):
     """
-    Removes page numbers and extra whitespace to ensure 
-    consistent chapter identification.
+    Extracts the header text from a page.
+    You may adjust this depending on how your PDF is structured.
     """
-    # Remove the word 'Page' and any following digits (case insensitive)
-    text = re.sub(r'\bpage\s*\d+', '', text, flags=re.IGNORECASE)
-    # Remove standalone numbers (usually the page number itself)
-    text = re.sub(r'\b\d+\b', '', text)
-    # Remove extra spaces and newlines
-    return " ".join(text.split()).strip()
+    text = page.extract_text() or ""
+    lines = text.split("\n")
+    if lines:
+        return lines[0].strip()  # assume header is first line
+    return ""
 
-def split_pdf_by_headers(input_path, output_folder):
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
+def main():
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    doc = fitz.open(input_path)
-    total_pages = len(doc)
-    
-    current_chapter_id = None
-    chapter_start_page = 0
-    
-    # Define the "Header Area" (x0, y0, x1, y1)
-    header_rect = fitz.Rect(0, 0, 600, 60) 
+    reader = PdfReader(INPUT_PATH)
+    num_pages = len(reader.pages)
 
-    for page_num in range(total_pages):
-        # Target EVEN pages (left-hand side in most PDF readers)
-        if page_num % 2 == 0:
-            page = doc[page_num]
-            raw_text = page.get_textbox(header_rect)
-            
-            # Clean the text to ignore page numbers during comparison
-            cleaned_text = clean_header(raw_text)
+    chapters = []  # list of (chapter_name, [page_indices])
+    current_chapter = None
+    current_pages = []
 
-            # Skip comparison if the header is empty (e.g., a blank page)
-            if not cleaned_text:
-                continue
+    for i in range(num_pages):
+        page = reader.pages[i]
 
-            # Detect a change in chapter
-            if current_chapter_id is not None and cleaned_text != current_chapter_id:
-                save_chunk(doc, chapter_start_page, page_num - 1, current_chapter_id, output_folder)
-                chapter_start_page = page_num
-            
-            current_chapter_id = cleaned_text
+        # Check only even-numbered pages (1-based left pages)
+        if i % 2 == 1:
+            header = extract_header_text(page)
 
-    # Save the final chapter
-    if current_chapter_id:
-        save_chunk(doc, chapter_start_page, total_pages - 1, current_chapter_id, output_folder)
-    
-    doc.close()
-    print("\nProcess finished successfully.")
+            if current_chapter is None:
+                # first chapter
+                current_chapter = header
+                current_pages.append(i - 1 if i > 0 else i)
+                current_pages.append(i)
+            else:
+                if header == current_chapter:
+                    # same chapter
+                    current_pages.append(i - 1 if i > 0 else i)
+                    current_pages.append(i)
+                else:
+                    # chapter changed → save previous
+                    chapters.append((current_chapter, sorted(set(current_pages))))
+                    current_chapter = header
+                    current_pages = [i - 1 if i > 0 else i, i]
 
-def save_chunk(doc, start, end, name, folder):
-    new_doc = fitz.open()
-    new_doc.insert_pdf(doc, from_page=start, to_page=end)
-    
-    # Create a safe filename (max 30 chars to keep it neat)
-    safe_name = "".join([c for c in name if c.isalnum() or c == ' ']).strip()[:30]
-    if not safe_name:
-        safe_name = f"chapter_starting_page_{start+1}"
-        
-    output_path = os.path.join(folder, f"{safe_name}.pdf")
-    new_doc.save(output_path)
-    new_doc.close()
-    print(f"Created: {output_path} (Pages {start+1}-{end+1})")
+    # Save last chapter
+    if current_chapter is not None:
+        chapters.append((current_chapter, sorted(set(current_pages))))
+
+    # Write PDFs
+    for idx, (chapter_name, pages) in enumerate(chapters, start=1):
+        writer = PdfWriter()
+        for p in pages:
+            writer.add_page(reader.pages[p])
+
+        safe_name = chapter_name.replace("/", "_").replace("\\", "_")
+        out_path = os.path.join(OUTPUT_DIR, f"{idx:02d}_{safe_name}.pdf")
+
+        with open(out_path, "wb") as f:
+            writer.write(f)
+
+        print(f"Saved chapter: {chapter_name} → {out_path}")
 
 if __name__ == "__main__":
-    INPUT_FILE = "/content/drive/MyDrive/input.pdf"
-    OUTPUT_DIR = "/content/drive/MyDrive/split_chapters/"
-    
-    if os.path.exists(INPUT_FILE):
-        split_pdf_by_headers(INPUT_FILE, OUTPUT_DIR)
-    else:
-        print(f"Error: {INPUT_FILE} not found.")
+    main()
