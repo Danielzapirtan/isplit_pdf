@@ -19,7 +19,7 @@ def extract_header_from_right_odd_page(pdf_path):
             
             # Verificăm dacă e pagină impară (numărul paginii începe de la 1)
             # În pdfplumber, indexarea începe de la 0
-            is_odd_page = (page_num + 1) % 2 == 1
+            is_odd_page = (page_num + 1) % 2 == 0
             
             if is_odd_page:
                 # Extragem textul din partea de sus a paginii (antet)
@@ -49,7 +49,7 @@ def extract_header_from_right_odd_page(pdf_path):
                                 }
                             
                             # Începem un capitol nou
-                            current_chapter = re.match('[A-Z ]*', header_text).group()
+                            current_chapter = header_text
                             start_page = page_num
     
     # Adăugăm ultimul capitol
