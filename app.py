@@ -33,7 +33,7 @@ def extract_header_from_left_even_page(pdf_path):
                     page_width * 0.25,  # x0: 25% din lățime (stânga)
                     0,                   # y0: începutul paginii
                     page_width * 0.75,  # x1: 75% din lățime (dreapta)
-                    page_height * 0.12   # y1: 12% din înălțime (suficient pentru antet)
+                    page_height * 0.1   # y1: 12% din înălțime (suficient pentru antet)
                 )
                 
                 # Încercăm să extragem textul din zona antetului
