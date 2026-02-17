@@ -1,1 +1,1 @@
-pymupdf
+PyPDF2
