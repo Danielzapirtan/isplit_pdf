@@ -26,10 +26,10 @@ def extract_chapters_from_even_pages(pdf_path):
                 
                 # Bbox pentru centrul antetului (25% - 75% din lățime, primele 12% din înălțime)
                 header_bbox = (
-                    page_width * 0.25,   # x0: 25% din lățime
+                    page_width * 0.15,   # x0: 25% din lățime
                     0,                    # y0: începutul paginii
-                    page_width * 0.75,   # x1: 75% din lățime
-                    page_height * 0.12    # y1: 12% din înălțime
+                    page_width * 0.85,   # x1: 75% din lățime
+                    page_height * 0.1    # y1: 12% din înălțime
                 )
                 
                 cropped_page = page.within_bbox(header_bbox)
