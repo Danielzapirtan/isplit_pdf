@@ -159,7 +159,7 @@ class PDFChapterSegmenter:
         chapters = []
         page_mappings = {}
         
-        for page_num in range(min(5, self.total_pages)):
+        for page_num in range(min(18, self.total_pages)):
             page = self.pdf_document[page_num]
             text = page.get_text()
             
