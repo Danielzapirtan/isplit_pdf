@@ -49,7 +49,7 @@ def extract_header_from_right_odd_page(pdf_path):
                                 }
                             
                             # Începem un capitol nou
-                            current_chapter = header_text
+                            current_chapter = re.match('[A-Z ]*', header_text).group()
                             start_page = page_num
     
     # Adăugăm ultimul capitol
