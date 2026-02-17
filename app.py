@@ -254,7 +254,8 @@ class PDFChapterSegmenter:
         print(f"   📖 Capitole găsite în cuprins: {len(toc_chapters)}")
         
         # Combinăm rezultatele
-        self.chapters = self.merge_chapters([outline_chapters, formatting_chapters, toc_chapters])
+        #self.chapters = #self.merge_chapters([outline_chapters, #formatting_chapters, toc_chapters])
+        self.chapters = toc_chapters
         
         # Dacă nu am găsit niciun capitol, încercăm o metodă mai simplă
         if not self.chapters:
