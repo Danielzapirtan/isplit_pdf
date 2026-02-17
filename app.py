@@ -7,7 +7,7 @@ import sys
 INPUT_DEFAULT = "/content/drive/MyDrive/input.pdf"
 OUTPUT_DEFAULT = "/content/drive/MyDrive/chapters"
 
-# Pattern to match TOC lines ending with a page number
+# Match TOC lines ending with page number
 PAGE_PATTERN = re.compile(r'(.+?)[\s:/]+(\d+)$')
 
 # Only main chapters: PART, Roman numerals, or digits with dot
@@ -20,7 +20,6 @@ MAX_FILENAME_LENGTH = 120
 
 
 def find_contents_start(doc):
-    """Return the first page index containing 'Contents'"""
     for i, page in enumerate(doc):
         text = page.get_text("text")
         if text.lower().strip().startswith("content"):
@@ -29,21 +28,23 @@ def find_contents_start(doc):
 
 
 def clean_title(title):
-    """Sanitize title for filenames"""
-    title = re.sub(r'\s+', ' ', title).strip()
+    """Sanitize and truncate title for filename, removing trailing numbers"""
+    # Remove trailing numbers (page numbers, leftover digits)
+    title = re.sub(r'\s+\d+$', '', title.strip())
+    # Remove unsafe filename characters
     title = re.sub(r'[\\/*?:"<>|]', "", title)
+    # Normalize spaces
+    title = re.sub(r'\s+', ' ', title)
     return title[:MAX_FILENAME_LENGTH]
 
 
 def is_main_chapter(title):
-    """Return True only for main chapters, not subheadings"""
     if INDEX_LIKE_PATTERN.search(title):
         return False
     return bool(MAIN_CHAPTER_PATTERN.match(title))
 
 
 def extract_toc_entries(doc, start_index):
-    """Extract main chapter entries (title, page) from TOC"""
     entries = []
     last_page_number = -1
 
@@ -64,14 +65,12 @@ def extract_toc_entries(doc, start_index):
                 if not is_main_chapter(title):
                     continue
 
-                # Ensure strictly increasing page numbers
                 if page_number <= last_page_number:
                     continue
 
                 entries.append((title, page_number))
                 last_page_number = page_number
 
-        # Stop if page numbers jump unrealistically high (likely Index)
         if entries and last_page_number > len(doc) + 50:
             break
 
@@ -79,7 +78,6 @@ def extract_toc_entries(doc, start_index):
 
 
 def compute_offset(doc, first_printed_page):
-    """Compute PDF page offset for printed page numbers"""
     for i, page in enumerate(doc):
         text = page.get_text("text")
         if re.search(rf'\b{first_printed_page}\b', text):
@@ -88,7 +86,6 @@ def compute_offset(doc, first_printed_page):
 
 
 def split_pdf_by_toc(input_path, output_dir):
-    """Split PDF into main chapters only"""
     if not os.path.exists(input_path):
         raise FileNotFoundError(f"Input PDF not found: {input_path}")
 
