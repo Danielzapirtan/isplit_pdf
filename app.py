@@ -110,7 +110,7 @@ class PDFChapterSegmenter:
                             title_patterns = [
                                 r'^Capitolul\s+\d+',  # "Capitolul 1"
                                 r'^Chapter\s+\d+',    # "Chapter 1"
-                                r'^\d+\.\s+[A-Z]',    # "1. Title"
+                                r'^\d+.',    # "1. Title"
                                 r'^[IVXLCDM]+\.\s+',  # "I. Title" (numere romane)
                                 r'^[A-Z][a-z]+\s+\d+', # "Chapter 1" fără cuvântul "Chapter"
                             ]
