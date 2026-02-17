@@ -91,18 +91,20 @@ def segment_pdf_by_chapters(input_path, output_dir=None):
     
     # Construim capitolele cu paginile corespunzătoare
     chapters = []
+    old_title = ''
     for i, (start_page, title) in enumerate(chapter_starts):
-        if i < len(chapter_starts) - 1:
-            end_page = chapter_starts[i + 1][0]  # Pagina de start a următorului capitol
-        else:
-            end_page = total_pages  # Ultimul capitol merge până la sfârșit
+        if title != old_title:
+            if i < len(chapter_starts) - 1:
+                end_page = chapter_starts[i + 1][0]  # Pagina de start a următorului capitol
+            else:
+                end_page = total_pages  # Ultimul capitol merge până la sfârșit
         
-        chapters.append({
-            'title': title,
-            'start_page': start_page + 1,  # Convertim la indexare de la 1 pentru utilizator
-            'end_page': end_page,
-            'pages': list(range(start_page + 1, end_page + 1))
-        })
+            chapters.append({
+                'title': title,
+                'start_page': start_page + 1,  # Convertim la indexare de la 1 pentru utilizator
+                'end_page': end_page,
+                'pages': list(range(start_page + 1, end_page + 1))
+            })
     
     print(f"\n✅ Am găsit {len(chapters)} capitole, fiecare începând de la o pagină impară:\n")
     
