@@ -279,7 +279,7 @@ class PDFChapterSegmenter:
             text = page.get_text()[:500]  # Primele 500 de caractere
             
             lines = text.split('\n')
-            for line in lines[:4]:  # Primele 5 linii
+            for line in lines[:5]:  # Primele 5 linii
                 line_lower = line.lower().strip()
                 
                 # Verificăm dacă linia conține cuvinte cheie de capitol
@@ -287,6 +287,7 @@ class PDFChapterSegmenter:
                     if keyword in line_lower and len(line) < 200 and len(line) > 5:
                         # Extragem primele 50 de caractere ca titlu
                         title = line[:50].strip()
+                        page_num = lines[0].lower().strip()
                         chapters.append(Chapter(title=title, start_page=page_num + 1, level=1))
                         break
         
