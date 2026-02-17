@@ -1,4 +1,4 @@
-import PyPDF2
+limport PyPDF2
 from PyPDF2 import PdfReader, PdfWriter
 import re
 from typing import List, Tuple, Optional
@@ -153,7 +153,7 @@ class PDFChapterSegmenter:
         # Analizăm primele 5 pagini pentru a găsi un cuprins
         toc_patterns = [
             r'(Cuprins|Contents|Table of Contents|Index)',
-            r'\.{2,}\s+\d+',  # pattern pentru puncte și numere de pagină
+            r'\d\.{1,1}\s+\d+',  # pattern pentru puncte și numere de pagină
         ]
         
         chapters = []
