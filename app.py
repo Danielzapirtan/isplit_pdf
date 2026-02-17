@@ -272,7 +272,7 @@ class PDFChapterSegmenter:
             Lista capitolelor detectate
         """
         chapters = []
-        chapter_keywords = ['capitol', 'chapter', 'secțiune', 'section', 'part']
+        chapter_keywords = ['capitol', 'chapter']
         
         for page_num in range(self.total_pages):
             page = self.pdf_document[page_num]
