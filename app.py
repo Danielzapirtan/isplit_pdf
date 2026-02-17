@@ -108,7 +108,7 @@ class PDFChapterSegmenter:
                             
                             # Căutăm pattern-uri comune pentru titluri
                             title_patterns = [
-                                r'^\d+\s',    # "1. Title"
+                                r'^\d+\s[A-Z]',    # "1. Title"
                             ]
                             
                             for pattern in title_patterns:
