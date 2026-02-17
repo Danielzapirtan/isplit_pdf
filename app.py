@@ -245,16 +245,16 @@ class PDFChapterSegmenter:
         
         # Încercăm diferite metode de detectare
         outline_chapters = self.extract_chapters_from_outline()
-        formatting_chapters = self.extract_chapters_by_formatting()
+        #formatting_chapters = self.extract_chapters_by_formatting()
         toc_chapters = self.extract_chapters_by_table_of_contents()
         
         # Afișăm rezultatele fiecărei metode
         print(f"   📑 Capitole găsite în outline: {len(outline_chapters)}")
-        print(f"   📝 Capitole găsite prin formatare: {len(formatting_chapters)}")
+        #print(f"   📝 Capitole găsite prin formatare: {len(formatting_chapters)}")
         print(f"   📖 Capitole găsite în cuprins: {len(toc_chapters)}")
         
         # Combinăm rezultatele
-        self.chapters = self.merge_chapters([outline_chapters, formatting_chapters, toc_chapters])
+        self.chapters = self.merge_chapters([outline_chapters, toc_chapters])
         
         # Dacă nu am găsit niciun capitol, încercăm o metodă mai simplă
         if not self.chapters:
