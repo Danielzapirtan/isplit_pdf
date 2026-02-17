@@ -30,9 +30,9 @@ def extract_header_from_left_even_page(pdf_path):
                 # Definim bbox-ul pentru antet - ne uităm în partea de sus a paginii
                 # Ne concentrăm pe zona centrală (25% - 75% din lățime) pentru a capta centrul antetului
                 header_bbox = (
-                    page_width * 0.25,  # x0: 25% din lățime (stânga)
+                    page_width * 0.1,  # x0: 25% din lățime (stânga)
                     0,                   # y0: începutul paginii
-                    page_width * 0.75,  # x1: 75% din lățime (dreapta)
+                    page_width * 0.9,  # x1: 75% din lățime (dreapta)
                     page_height * 0.1   # y1: 12% din înălțime (suficient pentru antet)
                 )
                 
