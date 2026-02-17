@@ -279,7 +279,7 @@ class PDFChapterSegmenter:
             text = page.get_text()[:500]  # Primele 500 de caractere
             
             lines = text.split('\n')
-            for line in lines[:5]:  # Primele 5 linii
+            for line in lines[:1]:  # Primele 5 linii
                 line_lower = line.lower().strip()
                 
                 # Verificăm dacă linia conține cuvinte cheie de capitol
