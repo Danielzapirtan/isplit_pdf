@@ -159,7 +159,7 @@ class PDFChapterSegmenter:
         chapters = []
         page_mappings = {}
         
-        for page_num in range(min(5, self.total_pages)):
+        for page_num in range(min(18, self.total_pages)):
             page = self.pdf_document[page_num]
             text = page.get_text()
             
@@ -174,11 +174,11 @@ class PDFChapterSegmenter:
                     match = re.search(r'(.+?)[\.\s]+(\d+)$', line)
                     if match:
                         title = match.group(1).strip()
-                        page_num = int(match.group(2))
+                        page_num2 = int(match.group(2))
                         
                         # Verificăm dacă numărul paginii este valid
-                        if 1 <= page_num <= self.total_pages:
-                            page_mappings[title] = page_num
+                        if 1 <= page_num2 <= self.total_pages:
+                            page_mappings[title] = page_num2
                             chapters.append(Chapter(title=title, start_page=page_num, level=1))
         
         # Dacă am găsit suficiente intrări în cuprins, le folosim
