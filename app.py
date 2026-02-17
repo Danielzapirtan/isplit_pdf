@@ -8,8 +8,11 @@ INPUT_DEFAULT = "/content/drive/MyDrive/input.pdf"
 OUTPUT_DEFAULT = "/content/drive/MyDrive/chapters"
 
 PAGE_PATTERN = re.compile(r'(.+?)[\s:/]+(\d+)$')
-
-MAX_FILENAME_LENGTH = 120  # Safe limit well below 255
+CHAPTER_START_PATTERN = re.compile(
+    r'^(PART\s+[IVXLC]+|[IVXLC]+\.\s+|\d+\.\s+)', re.IGNORECASE
+)
+INDEX_LIKE_PATTERN = re.compile(r',\s*\d+')
+MAX_FILENAME_LENGTH = 120
 
 
 def find_contents_start(doc):
@@ -28,9 +31,20 @@ def clean_title(title):
     return title
 
 
+def is_valid_chapter_title(title):
+    if INDEX_LIKE_PATTERN.search(title):
+        return False
+    if "(cont" in title.lower():
+        return False
+    if not CHAPTER_START_PATTERN.match(title):
+        return False
+    return True
+
+
 def extract_full_toc(doc, start_index):
     entries = []
     buffer = ""
+    last_page_number = -1
 
     for i in range(start_index, len(doc)):
         text = doc[i].get_text("text")
@@ -40,7 +54,6 @@ def extract_full_toc(doc, start_index):
             line = raw_line.strip()
             if not line:
                 continue
-
             if line.lower().startswith("content"):
                 continue
 
@@ -49,40 +62,31 @@ def extract_full_toc(doc, start_index):
 
             if match:
                 title = match.group(1).strip()
+                page_number = int(match.group(2))
 
-                # Guard: avoid absurdly long merged titles
-                if len(title) > 300:
+                if not is_valid_chapter_title(title):
                     buffer = ""
                     continue
 
-                page_number = int(match.group(2))
+                # Enforce strictly increasing page numbers
+                if page_number <= last_page_number:
+                    buffer = ""
+                    continue
+
                 entries.append((title, page_number))
+                last_page_number = page_number
                 buffer = ""
             else:
-                # Prevent runaway accumulation
-                if len(candidate) > 300:
+                if len(candidate) > 250:
                     buffer = ""
                 else:
                     buffer = candidate
 
-        # Stop once real content begins (TOC likely ended)
-        if entries and detect_real_chapter_page(doc[i]):
+        # Hard stop if page numbers become unrealistic
+        if entries and last_page_number > len(doc) + 50:
             break
 
     return entries
-
-
-def detect_real_chapter_page(page):
-    blocks = page.get_text("dict")["blocks"]
-    for block in blocks:
-        if "lines" not in block:
-            continue
-        for line in block["lines"]:
-            y_position = line["bbox"][1]
-            max_font = max(span["size"] for span in line["spans"])
-            if y_position < 200 and max_font > 16:
-                return True
-    return False
 
 
 def compute_offset(doc, first_printed_page):
@@ -105,7 +109,7 @@ def split_pdf_by_toc(input_path, output_dir):
 
     toc_entries = extract_full_toc(doc, contents_start)
     if not toc_entries:
-        raise ValueError("No TOC entries detected.")
+        raise ValueError("No valid chapter entries detected in TOC.")
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -144,7 +148,9 @@ def split_pdf_by_toc(input_path, output_dir):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Split PDF by printed multi-page TOC.")
+    parser = argparse.ArgumentParser(
+        description="Robust PDF chapter splitter using printed multi-page TOC."
+    )
     parser.add_argument("--input", default=INPUT_DEFAULT)
     parser.add_argument("--output", default=OUTPUT_DEFAULT)
     args = parser.parse_args()
