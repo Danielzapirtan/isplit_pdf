@@ -371,8 +371,8 @@ def main():
     
     # Citim calea către fișierul PDF
     while True:
-        pdf_path = input("\n📂 Introduceți calea către fișierul PDF: ").strip()
-        
+        #pdf_path = input("\n📂 Introduceți calea către fișierul PDF: ").strip()
+        pdf_path = '/content/drive/MyDrive/input.pdf'
         # Eliminăm ghilimelele dacă există
         pdf_path = pdf_path.strip('"').strip("'")
         
