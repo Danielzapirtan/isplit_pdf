@@ -16,8 +16,9 @@ TOP_CHAPTER_PATTERN = re.compile(r'^\d+\.\s+', re.IGNORECASE)
 INDEX_LIKE_PATTERN = re.compile(r',\s*\d+|\(cont\)|Index|Notes', re.IGNORECASE)
 MAX_FILENAME_LENGTH = 120
 
-# A TOC page is usually short; stop collecting TOC lines after this many pages
-MAX_TOC_PAGES = 20
+# Minimum fraction of lines on a page that must look like TOC entries
+# for that page to still be considered part of the TOC.
+TOC_LINE_RATIO_THRESHOLD = 0.15
 
 
 def find_contents_start(doc):
@@ -42,28 +43,55 @@ def clean_title(title):
     return title[:MAX_FILENAME_LENGTH]
 
 
+def is_toc_page(page):
+    """
+    Return True if this page looks like it is still part of the TOC.
+    We count how many non-empty lines match PAGE_PATTERN (title ... number)
+    and require that fraction to exceed a threshold.  A prose body page will
+    have very few such lines; a TOC page will have many.
+    """
+    lines = [l.strip() for l in page.get_text("text").splitlines() if l.strip()]
+    if not lines:
+        return False
+    matched = sum(1 for l in lines if PAGE_PATTERN.match(l))
+    return (matched / len(lines)) >= TOC_LINE_RATIO_THRESHOLD
+
+
+def collect_toc_lines(doc, start_index):
+    """
+    Walk pages from start_index onward, accumulating lines from every page
+    that still looks like a TOC page.  Stop as soon as a page no longer
+    qualifies, and return (all_toc_lines, toc_end_physical_index).
+    """
+    toc_lines = []
+    toc_end = start_index + 1  # at minimum, skip the heading page itself
+
+    for i in range(start_index, len(doc)):
+        page = doc[i]
+        # Always include the heading page; after that, test each page.
+        if i == start_index or is_toc_page(page):
+            for line in page.get_text("text").splitlines():
+                line = line.strip()
+                if line and not re.match(r'^contents?$', line, re.IGNORECASE):
+                    toc_lines.append(line)
+            toc_end = i + 1
+        else:
+            break  # left the TOC section
+
+    return toc_lines, toc_end
+
+
 def extract_toc_entries(doc, start_index):
     """
-    Return top-level chapter entries (PARTs or numbered chapters).
-
-    FIX Bug 1: only scan a bounded window of pages after the TOC heading
-    instead of the entire rest of the document.
+    Return (entries, toc_end) where entries is a list of (title, printed_page)
+    for top-level chapters, and toc_end is the physical index of the first
+    page after the TOC.
     """
     entries = []
     last_page_number = -1
     detected_part = False
-    toc_lines = []
 
-    # FIX Bug 1: cap how many pages we read as TOC
-    end_index = min(start_index + MAX_TOC_PAGES, len(doc))
-
-    for i in range(start_index, end_index):
-        text = doc[i].get_text("text")
-        lines = text.splitlines()
-        for line in lines:
-            line = line.strip()
-            if line and not re.match(r'^contents?$', line, re.IGNORECASE):
-                toc_lines.append(line)
+    toc_lines, toc_end = collect_toc_lines(doc, start_index)
 
     # Detect whether PARTs exist
     for line in toc_lines:
@@ -90,7 +118,7 @@ def extract_toc_entries(doc, start_index):
         entries.append((title, page_number))
         last_page_number = page_number
 
-    return entries
+    return entries, toc_end
 
 
 def compute_offset(doc, first_printed_page, toc_end):
@@ -101,7 +129,6 @@ def compute_offset(doc, first_printed_page, toc_end):
 
     Returns offset such that:  physical_index = printed_page_num - 1 + offset
     """
-    return 19
     for i in range(toc_end, len(doc)):
         text = doc[i].get_text("text")
         # Match the number as a standalone token (header/footer page number)
@@ -121,14 +148,12 @@ def split_pdf_by_toc(input_path, output_dir):
     if contents_start is None:
         raise ValueError("Contents section not found.")
 
-    toc_entries = extract_toc_entries(doc, contents_start)
+    toc_entries, toc_end = extract_toc_entries(doc, contents_start)
     if not toc_entries:
         raise ValueError("No top-level chapters detected in TOC.")
 
     os.makedirs(output_dir, exist_ok=True)
 
-    # FIX Bug 2: pass toc_end so compute_offset skips the TOC region
-    toc_end = min(contents_start + MAX_TOC_PAGES, len(doc))
     offset = compute_offset(doc, toc_entries[0][1], toc_end)
 
     # physical index = (printed_page - 1) + offset
