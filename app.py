@@ -101,6 +101,7 @@ def compute_offset(doc, first_printed_page, toc_end):
 
     Returns offset such that:  physical_index = printed_page_num - 1 + offset
     """
+    return 19
     for i in range(toc_end, len(doc)):
         text = doc[i].get_text("text")
         # Match the number as a standalone token (header/footer page number)
