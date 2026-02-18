@@ -1,2 +1,2 @@
 pypdf
-pymupdf
+PyPDF2
