@@ -16,10 +16,10 @@ def split_by_headers(input_path, output_dir):
             oldtext = text
             text = page.extract_text()
             if oldtext == None:
-                delimiter_positions.append(page_num + 1)    
+                delimiter_positions.append(page_num)    
             elif len(oldtext.split()):
-                if re.sub(r"[^A-Za-z]", "", oldtext.split()[0]) != re.sub(r"^[A-Za-z]", "", text.split()[0]):
-                    delimiter_positions.append(page_num + 1)    
+                if re.match(r"[[:digit:]]\+$", text.split()[0]):
+                    delimiter_positions.append(page_num)    
     return delimiter_positions
 
 def split_pdf_by_intentionally_blank_pages(input_path, output_dir):
