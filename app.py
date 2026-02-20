@@ -36,7 +36,7 @@ def split_by_headers(input_path, output_dir):
 
 def trac(delimiter_positions):
     res = []
-    while del_pos in delimiter_positions:
+    for del_pos in delimiter_positions:
         if del_pos:
             if del_pos - 1 not in delimiter_positions:
                 res.append(del_pos - 1)
