@@ -34,6 +34,15 @@ def split_by_headers(input_path, output_dir):
         
     return delimiter_positions
 
+def trac(delimiter_positions):
+    res = []
+    while del_pos in delimiter_positions:
+        if del_pos:
+            if del_pos - 1 not in delimiter_positions:
+                res.append(del_pos - 1)
+    return res
+
+
 def split_pdf_by_intentionally_blank_pages(input_path, output_dir):
     # Create output directory if it doesn't exist
     Path(output_dir).mkdir(parents=True, exist_ok=True)
@@ -42,6 +51,7 @@ def split_pdf_by_intentionally_blank_pages(input_path, output_dir):
         pdf_reader = PyPDF2.PdfReader(file)
         total_pages = len(pdf_reader.pages)
         delimiter_positions = split_by_headers(input_path, output_dir)
+        delimiter_positions = trac(delimiter_positions)
         
         print(f"\n📌 Chapter delimiter positions (pages where chapters end): {[p+1 for p in delimiter_positions if p < total_pages]}")
         print("-" * 70)
