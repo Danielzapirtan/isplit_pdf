@@ -30,6 +30,19 @@ def is_intentionally_blank_page(page):
         print(f"Warning: Could not extract text from page: {e}")
         return False
 
+def split_by_headers(input_path, output_dir):
+    with open(input_path, 'rb') as file:
+        pdf_reader = PyPDF2.PdfReader(file)
+        delimiter_positions = []
+        text = None
+        for page_num in range(total_pages - 1):
+            page = pdf_reader.pages[page_num];
+            oldtext = text
+            text = page.extract_text()
+            if re.match(r"[A-Za-z]", text.split()[0]) != re.match(r"[A-Za-z]", text.split()[0]):
+                delimiter_positions.append(page_num + 1)    
+    return delimiter_positions
+
 def split_pdf_by_intentionally_blank_pages(input_path, output_dir):
     """
     Split PDF into chapters based on pages that say "This page intentionally left blank".
@@ -57,64 +70,64 @@ def split_pdf_by_intentionally_blank_pages(input_path, output_dir):
         
         if not delimiter_positions:
             print("No delimiter pages found. The entire PDF will be treated as one chapter.")
-            chapters = [{'pages': list(range(total_pages)), 'chapter_num': 1}]
-        else:
-            # Find all pages that are BEFORE a blank page (these will be chapter starts)
-            chapter_start_pages = []
-            for delim_pos in delimiter_positions:
-                if delim_pos > 0:  # Make sure there's a page before the blank page
-                    chapter_start_pages.append(delim_pos - 1)
+            #chapters = [{'pages': list(range(total_pages)), 'chapter_num': 1}]
+            delimiter_positions = split_by_headers(input_file, output_dir)
+        # Find all pages that are BEFORE a blank page (these will be chapter starts)
+        chapter_start_pages = []
+        for delim_pos in delimiter_positions:
+            if delim_pos > 0:  # Make sure there's a page before the blank page
+                chapter_start_pages.append(delim_pos - 1)
             
-            # Remove duplicates and sort
-            chapter_start_pages = sorted(set(chapter_start_pages))
+        # Remove duplicates and sort
+        chapter_start_pages = sorted(set(chapter_start_pages))
             
-            print(f"\n📌 Chapter start pages (pages BEFORE blank pages): {[p+1 for p in chapter_start_pages]}")
-            print("-" * 70)
+        print(f"\n📌 Chapter start pages (pages BEFORE blank pages): {[p+1 for p in chapter_start_pages]}")
+        print("-" * 70)
             
-            # Build chapters
-            chapters = []
-            chapter_count = 1
+        # Build chapters
+        chapters = []
+        chapter_count = 1
             
-            # If there are pages before the first chapter start, they form Chapter 1
-            if chapter_start_pages and chapter_start_pages[0] > 0:
-                first_chapter_pages = list(range(0, chapter_start_pages[0]))
-                if first_chapter_pages:
-                    chapters.append({
-                        'pages': first_chapter_pages,
-                        'chapter_num': chapter_count,
-                        'type': 'introductory'
-                    })
-                    chapter_count += 1
+        # If there are pages before the first chapter start, they form Chapter 1
+        if chapter_start_pages and chapter_start_pages[0] > 0:
+            first_chapter_pages = list(range(0, chapter_start_pages[0]))
+            if first_chapter_pages:
+                chapters.append({
+                    'pages': first_chapter_pages,
+                    'chapter_num': chapter_count,
+                    'type': 'introductory'
+                })
+                chapter_count += 1
             
-            # Create chapters for each chapter start page
-            for i, start_page in enumerate(chapter_start_pages):
-                # Determine end of this chapter
-                if i < len(chapter_start_pages) - 1:
-                    # End before the next chapter start page
-                    end_page = chapter_start_pages[i + 1] - 1
-                else:
-                    # Last chapter goes to the end of the document
-                    end_page = total_pages - 1
+        # Create chapters for each chapter start page
+        for i, start_page in enumerate(chapter_start_pages):
+            # Determine end of this chapter
+            if i < len(chapter_start_pages) - 1:
+                # End before the next chapter start page
+                end_page = chapter_start_pages[i + 1] - 1
+            else:
+                # Last chapter goes to the end of the document
+                end_page = total_pages - 1
                 
-                # Create chapter pages
-                if start_page <= end_page:
-                    chapter_pages = list(range(start_page, end_page + 1))
+            # Create chapter pages
+            if start_page <= end_page:
+                chapter_pages = list(range(start_page, end_page + 1))
                     
-                    # Find which blank page this chapter starts before
-                    corresponding_blank = None
-                    for delim_pos in delimiter_positions:
-                        if delim_pos - 1 == start_page:
-                            corresponding_blank = delim_pos + 1
-                            break
+                # Find which blank page this chapter starts before
+                corresponding_blank = None
+                for delim_pos in delimiter_positions:
+                    if delim_pos - 1 == start_page:
+                        corresponding_blank = delim_pos + 1
+                        break
                     
-                    chapters.append({
-                        'pages': chapter_pages,
-                        'chapter_num': chapter_count,
-                        'starts_at_page': start_page + 1,
-                        'blank_page_after': corresponding_blank,
-                        'type': 'regular'
-                    })
-                    chapter_count += 1
+                chapters.append({
+                    'pages': chapter_pages,
+                    'chapter_num': chapter_count,
+                    'starts_at_page': start_page + 1,
+                    'blank_page_after': corresponding_blank,
+                    'type': 'regular'
+                })
+                chapter_count += 1
         
         print(f"\n📊 Found {len(delimiter_positions)} delimiter pages")
         print(f"📊 Created {len(chapters)} chapters")
