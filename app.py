@@ -68,7 +68,7 @@ def split_pdf_by_intentionally_blank_pages(input_path, output_dir):
                 delimiter_positions.append(page_num)
                 print(f"✓ Found delimiter page at position {page_num + 1}: 'This page intentionally left blank'")
         
-        if not delimiter_positions:
+        if not delimiter_positions and False:
             print("No delimiter pages found. The entire PDF will be treated as one chapter.")
             #chapters = [{'pages': list(range(total_pages)), 'chapter_num': 1}]
             delimiter_positions = split_by_headers(input_file, output_dir)
