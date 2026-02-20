@@ -39,7 +39,7 @@ def trac(delimiter_positions):
     for del_pos in delimiter_positions:
         if del_pos:
             if del_pos - 1 not in delimiter_positions:
-                res.append(del_pos - 1)
+                res.append(del_pos - 2)
     return res
 
 
