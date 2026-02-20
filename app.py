@@ -93,6 +93,8 @@ def split_pdf_by_intentionally_blank_pages(input_path, output_dir):
         
         # Save each chapter as a separate PDF
         for chapter in chapters:
+            if len(chapter) < 4:
+                continue
             output_filename = f"chapter_{chapter['chapter_num']:03d}.pdf"
             output_path = os.path.join(output_dir, output_filename)
             
