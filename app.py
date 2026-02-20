@@ -38,7 +38,7 @@ def split_pdf_by_intentionally_blank_pages(input_path, output_dir):
         chapter_start_pages = sorted(set(chapter_start_pages))
         for chapter_start_page in reversed(chapter_start_pages):
             if chapter_start_page - 1 in chapter_start_pages:
-                chapter_start_pages.delete(chapter_start_page)
+                chapter_start_pages.del(chapter_start_page)
             
         print(f"\n📌 Chapter start pages (pages BEFORE blank pages): {[p+1 for p in chapter_start_pages]}")
         print("-" * 70)
