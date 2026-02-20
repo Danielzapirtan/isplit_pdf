@@ -15,8 +15,8 @@ def split_by_headers(input_path, output_dir):
             text = page.extract_text()
             if oldtext == None:
                 delimiter_positions.append(page_num)    
-            elif len(text.split()):
-                if not re.match(r"\d\s*$", text.split()[0]):
+            elif text.split():
+                if not re.search(r'\d\s*$', text.split()[0]):
                     delimiter_positions.append(page_num)    
     return delimiter_positions
 
