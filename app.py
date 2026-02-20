@@ -183,8 +183,6 @@ def main():
     print("=" * 70)
     print(f"📂 Input file: {input_path}")
     print(f"📂 Output directory: {output_dir}")
-    print("\n📋 RULE: The page BEFORE each 'intentionally blank' page")
-    print("        becomes the FIRST page of a NEW chapter")
     print("=" * 70)
     
     try:
