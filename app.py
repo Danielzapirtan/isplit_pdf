@@ -37,6 +37,8 @@ def split_by_headers(input_path, output_dir):
         delimiter_positions = []
         text = None
         for page_num in range(total_pages - 1):
+            if page_num % 2 == 1:
+                continue
             page = pdf_reader.pages[page_num];
             oldtext = text
             text = page.extract_text()
