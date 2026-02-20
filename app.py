@@ -26,7 +26,9 @@ def split_pdf_by_intentionally_blank_pages(input_path, output_dir):
     # Create output directory if it doesn't exist
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     
-    if True:
+    with open(input_path, 'rb') as file:
+        pdf_reader = PyPDF2.PdfReader(file)
+        total_pages = len(pdf_reader.pages)
         delimiter_positions = split_by_headers(input_path, output_dir)
         # Find all pages that are BEFORE a blank page (these will be chapter starts)
         chapter_start_pages = []
