@@ -55,7 +55,7 @@ def split_pdf_by_intentionally_blank_pages(input_path, output_dir):
             start_page = delimiter_positions[i]
             end_page = delimiter_positions[i + 1] - 1
             
-            if start_page <= end_page and start_page < total_pages:
+            if start_page + 4 <= end_page and start_page < total_pages:
                 chapter_pages = list(range(start_page, min(end_page, total_pages - 1) + 1))
                 
                 # Get the first page text for verification
