@@ -9,29 +9,17 @@ def split_by_headers(input_path, output_dir):
         total_pages = len(pdf_reader.pages)
         delimiter_positions = []  # This will store positions where chapters end
         prev_first_line = None
-        
-        # Always include page 0 as a chapter start
         delimiter_positions.append(0)
-        
         for page_num in range(total_pages - 1):
             page = pdf_reader.pages[page_num]
             text = page.extract_text()
-            
             if text:
-                # Get the first line of the page
                 first_line = text.split('\n')[0] if '\n' in text else text
-                # Check if the first line ends with digits (chapter header)
-                if not (re.search(r'\d{2,}\s*$', first_line.strip()) or re.search(r'^\s*\d{2,}', first_line.strip())):
-                    # This page starts with a chapter header, so the previous page ends the chapter
+                if not (re.search(r'\d+\s*$', first_line.strip()) or re.search(r'^\s*\d+', first_line.strip())):
                     delimiter_positions.append(page_num)
-        
-        # Add the last page as a delimiter
         if total_pages > 0:
             delimiter_positions.append(total_pages)
-        
-        # Sort and remove duplicates
         delimiter_positions = sorted(set(delimiter_positions))
-        
     return delimiter_positions
 
 def split_pdf_by_intentionally_blank_pages(input_path, output_dir):
