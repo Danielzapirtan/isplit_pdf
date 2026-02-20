@@ -71,7 +71,7 @@ def split_pdf_by_intentionally_blank_pages(input_path, output_dir):
         if not delimiter_positions or True:
             print("No delimiter pages found. The entire PDF will be treated as one chapter.")
             #chapters = [{'pages': list(range(total_pages)), 'chapter_num': 1}]
-            delimiter_positions = split_by_headers(input_file, output_dir)
+            delimiter_positions = split_by_headers(input_path, output_dir)
         # Find all pages that are BEFORE a blank page (these will be chapter starts)
         chapter_start_pages = []
         for delim_pos in delimiter_positions:
