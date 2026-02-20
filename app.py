@@ -21,7 +21,7 @@ def split_by_headers(input_path, output_dir):
                 # Get the first line of the page
                 first_line = text.split('\n')[0] if '\n' in text else text
                 # Check if the first line ends with digits (chapter header)
-                if re.search(r'\d+\s*$', first_line.strip()):
+                if re.search(r'\d+\s*$', first_line.strip()) or re.search(r'^\s*\d+', first_line.strip()):
                     # This page starts with a chapter header, so the previous page ends the chapter
                     delimiter_positions.append(page_num)
         
