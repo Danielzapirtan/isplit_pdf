@@ -211,11 +211,6 @@ def main():
         print(f"📁 Output location: {output_dir}")
         print("=" * 70)
         
-        # Optional: Show detailed verification
-        show_verification = input("\n🔍 Show detailed chapter verification? (y/n): ").lower().strip()
-        if show_verification == 'y':
-            verify_chapter_boundaries(input_path, chapters, delimiter_positions)
-        
         print("\n✨ Done! Check the output directory for your chapter PDFs.")
         
     except Exception as e:
