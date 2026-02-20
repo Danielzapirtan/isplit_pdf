@@ -16,7 +16,7 @@ def split_by_headers(input_path, output_dir):
             if oldtext == None:
                 delimiter_positions.append(page_num)    
             elif text.split():
-                if not re.search(r'\d\s*$', text.split()[0]):
+                if re.search(r'\d\s*$', text.split()[0]):
                     delimiter_positions.append(page_num)    
     return delimiter_positions
 
@@ -32,7 +32,7 @@ def split_pdf_by_intentionally_blank_pages(input_path, output_dir):
         chapter_start_pages = []
         for delim_pos in delimiter_positions:
             if delim_pos > 0:  # Make sure there's a page before the blank page
-                chapter_start_pages.append(delim_pos - 1)
+                chapter_start_pages.append(delim_pos)
             
         # Remove duplicates and sort
         chapter_start_pages = sorted(set(chapter_start_pages))
