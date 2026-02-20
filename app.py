@@ -7,17 +7,31 @@ def split_by_headers(input_path, output_dir):
     with open(input_path, 'rb') as file:
         pdf_reader = PyPDF2.PdfReader(file)
         total_pages = len(pdf_reader.pages)
-        delimiter_positions = []
-        text = None
+        delimiter_positions = []  # This will store positions where chapters end
+        prev_first_line = None
+        
+        # Always include page 0 as a chapter start
+        delimiter_positions.append(0)
+        
         for page_num in range(total_pages - 1):
             page = pdf_reader.pages[page_num]
-            oldtext = text
             text = page.extract_text()
-            if oldtext == None:
-                delimiter_positions.append(page_num)    
-            elif text.split():
-                if not re.search(r'\d\s*$', text.split()[0]):
-                    delimiter_positions.append(page_num)    
+            
+            if text:
+                # Get the first line of the page
+                first_line = text.split('\n')[0] if '\n' in text else text
+                # Check if the first line ends with digits (chapter header)
+                if re.search(r'\d+\s*$', first_line.strip()):
+                    # This page starts with a chapter header, so the previous page ends the chapter
+                    delimiter_positions.append(page_num)
+        
+        # Add the last page as a delimiter
+        if total_pages > 0:
+            delimiter_positions.append(total_pages)
+        
+        # Sort and remove duplicates
+        delimiter_positions = sorted(set(delimiter_positions))
+        
     return delimiter_positions
 
 def split_pdf_by_intentionally_blank_pages(input_path, output_dir):
@@ -28,67 +42,36 @@ def split_pdf_by_intentionally_blank_pages(input_path, output_dir):
         pdf_reader = PyPDF2.PdfReader(file)
         total_pages = len(pdf_reader.pages)
         delimiter_positions = split_by_headers(input_path, output_dir)
-        # Find all pages that are BEFORE a blank page (these will be chapter starts)
-        chapter_start_pages = []
-        for delim_pos in delimiter_positions:
-            if delim_pos > 0:  # Make sure there's a page before the blank page
-                chapter_start_pages.append(delim_pos - 1)
-            
-        # Remove duplicates and sort
-        chapter_start_pages = sorted(set(chapter_start_pages))
-        for chapter_start_page in reversed(chapter_start_pages):
-            if chapter_start_page - 1 in chapter_start_pages:
-                chapter_start_pages.remove(chapter_start_page)
-            
-        print(f"\n📌 Chapter start pages (pages BEFORE blank pages): {[p+1 for p in chapter_start_pages]}")
+        
+        print(f"\n📌 Chapter delimiter positions (pages where chapters end): {[p+1 for p in delimiter_positions if p < total_pages]}")
         print("-" * 70)
-            
+        
         # Build chapters
         chapters = []
         chapter_count = 1
+        
+        # Create chapters based on delimiter positions
+        for i in range(len(delimiter_positions) - 1):
+            start_page = delimiter_positions[i]
+            end_page = delimiter_positions[i + 1] - 1
             
-        # If there are pages before the first chapter start, they form Chapter 1
-        if chapter_start_pages and chapter_start_pages[0] > 0:
-            first_chapter_pages = list(range(0, chapter_start_pages[0]))
-            if first_chapter_pages:
-                chapters.append({
-                    'pages': first_chapter_pages,
-                    'chapter_num': chapter_count,
-                    'type': 'introductory'
-                })
-                chapter_count += 1
-            
-        # Create chapters for each chapter start page
-        for i, start_page in enumerate(chapter_start_pages):
-            # Determine end of this chapter
-            if i < len(chapter_start_pages) - 1:
-                # End before the next chapter start page
-                end_page = chapter_start_pages[i + 1] - 1
-            else:
-                # Last chapter goes to the end of the document
-                end_page = total_pages - 1
+            if start_page <= end_page and start_page < total_pages:
+                chapter_pages = list(range(start_page, min(end_page, total_pages - 1) + 1))
                 
-            # Create chapter pages
-            if start_page + 3 <= end_page:
-                chapter_pages = list(range(start_page, end_page + 1))
-                    
-                # Find which blank page this chapter starts before
-                corresponding_blank = None
-                for delim_pos in delimiter_positions:
-                    if delim_pos - 1 == start_page:
-                        corresponding_blank = delim_pos + 1
-                        break
-                    
+                # Get the first page text for verification
+                first_page_text = pdf_reader.pages[start_page].extract_text()
+                first_line = first_page_text.split('\n')[0] if first_page_text and '\n' in first_page_text else first_page_text
+                
                 chapters.append({
                     'pages': chapter_pages,
                     'chapter_num': chapter_count,
-                    'starts_at_page': start_page + 1,
-                    'blank_page_after': corresponding_blank,
-                    'type': 'regular'
+                    'first_page_num': start_page + 1,
+                    'last_page_num': min(end_page, total_pages - 1) + 1,
+                    'first_line': first_line[:100] if first_line else "[No text]"
                 })
                 chapter_count += 1
         
-        print(f"\n📊 Found {len(delimiter_positions)} delimiter pages")
+        print(f"\n📊 Found {len(delimiter_positions) - 1} chapter boundaries")
         print(f"📊 Created {len(chapters)} chapters")
         print("-" * 70)
         
@@ -108,22 +91,13 @@ def split_pdf_by_intentionally_blank_pages(input_path, output_dir):
                 pdf_writer.write(output_file)
             
             # Calculate page range (1-based for display)
-            if chapter['pages']:
-                start_page = chapter['pages'][0] + 1
-                end_page = chapter['pages'][-1] + 1
-                page_count = len(chapter['pages'])
-                
-                if chapter.get('type') == 'introductory':
-                    print(f"✓ Created {output_filename}: {page_count} pages "
-                          f"(original pages {start_page} to {end_page}) "
-                          f"[Introductory chapter]")
-                elif 'blank_page_after' in chapter and chapter['blank_page_after']:
-                    print(f"✓ Created {output_filename}: {page_count} pages "
-                          f"(original pages {start_page} to {end_page}) "
-                          f"[STARTS with page {chapter['starts_at_page']} - BEFORE blank page {chapter['blank_page_after']}]")
-                else:
-                    print(f"✓ Created {output_filename}: {page_count} pages "
-                          f"(original pages {start_page} to {end_page})")
+            start_page = chapter['first_page_num']
+            end_page = chapter['last_page_num']
+            page_count = len(chapter['pages'])
+            
+            print(f"✓ Created {output_filename}: {page_count} pages "
+                  f"(original pages {start_page} to {end_page})")
+            print(f"  First line: \"{chapter['first_line'][:50]}...\"")
         
         return chapters, delimiter_positions
 
@@ -139,8 +113,8 @@ def verify_chapter_boundaries(input_path, chapters, delimiter_positions):
         print("\n📖 Chapter details:")
         for chapter in chapters:
             if chapter['pages']:
-                first_page = chapter['pages'][0] + 1
-                last_page = chapter['pages'][-1] + 1
+                first_page = chapter['first_page_num']
+                last_page = chapter['last_page_num']
                 
                 # Get content of first page for verification
                 first_page_text = pdf_reader.pages[chapter['pages'][0]].extract_text()
@@ -152,11 +126,10 @@ def verify_chapter_boundaries(input_path, chapters, delimiter_positions):
                 print(f"📄 Pages: {first_page} to {last_page} ({len(chapter['pages'])} pages)")
                 print(f"🔹 FIRST page: {first_page}")
                 
-                # Check if this page is before a blank page
-                if first_page - 1 in delimiter_positions:
-                    print(f"✨ This chapter STARTS with page {first_page} which is BEFORE blank page {first_page + 1}")
-                elif first_page in [d + 1 for d in delimiter_positions]:
-                    print(f"⚠️  Note: This chapter starts with a blank page? (page {first_page})")
+                # Check if this page starts with a chapter header
+                first_line = chapter['first_line']
+                if re.search(r'\d+\s*$', first_line.strip()):
+                    print(f"✨ This chapter starts with a header ending with digits: \"{first_line[:50]}...\"")
                 
                 print(f"\n📝 First page preview:")
                 print(f"   \"{first_page_preview[:200]}...\"")
@@ -193,24 +166,17 @@ def main():
         print("📊 FINAL SUMMARY")
         print("=" * 70)
         print(f"✅ Total chapters created: {len(chapters)}")
-        print(f"✅ Delimiter pages found: {len(delimiter_positions)}")
+        print(f"✅ Chapter boundaries found: {len(delimiter_positions) - 1}")
         
-        if delimiter_positions:
-            delimiter_pages_display = [pos + 1 for pos in delimiter_positions]
-            print(f"📍 Delimiter pages at: {', '.join(map(str, delimiter_pages_display))}")
-            
-            # Calculate chapter start pages (pages before blank pages)
-            chapter_start_pages = []
-            for pos in delimiter_positions:
-                if pos > 0:  # Page before blank page exists
-                    chapter_start_pages.append(pos)  # The page number (0-based) that becomes chapter start
-            
-            if chapter_start_pages:
-                start_pages_display = [p + 1 for p in chapter_start_pages]
-                print(f"🎯 Chapter first pages (pages BEFORE blank pages): {', '.join(map(str, start_pages_display))}")
+        if len(delimiter_positions) > 1:
+            boundary_pages_display = [pos + 1 for pos in delimiter_positions[1:-1] if pos < total_pages]
+            print(f"📍 Chapter boundaries at pages (pages after these are new chapters): {', '.join(map(str, boundary_pages_display))}")
         
         print(f"📁 Output location: {output_dir}")
         print("=" * 70)
+        
+        # Optional: Verify chapter boundaries
+        verify_chapter_boundaries(input_path, chapters, delimiter_positions)
         
         print("\n✨ Done! Check the output directory for your chapter PDFs.")
         
@@ -231,4 +197,6 @@ if __name__ == "__main__":
         import PyPDF2
         print("✅ PyPDF2 installed successfully!\n")
     
+    # Add total_pages to the global scope for the summary
+    total_pages = 0
     main()
