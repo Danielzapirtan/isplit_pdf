@@ -68,7 +68,7 @@ def split_pdf_by_intentionally_blank_pages(input_path, output_dir):
                 end_page = total_pages - 1
                 
             # Create chapter pages
-            if start_page <= end_page:
+            if start_page + 3 <= end_page:
                 chapter_pages = list(range(start_page, end_page + 1))
                     
                 # Find which blank page this chapter starts before
