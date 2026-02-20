@@ -3,33 +3,6 @@ import os
 import re
 from pathlib import Path
 
-def is_intentionally_blank_page(page):
-    """Check if a page contains the text 'This page intentionally left blank' (case-insensitive)"""
-    try:
-        text = page.extract_text()
-        if text:
-            # Clean up text: remove extra whitespace and convert to lowercase for comparison
-            cleaned_text = ' '.join(text.split()).lower()
-            # Check for the exact phrase (case-insensitive)
-            if 'this page intentionally left blank' in cleaned_text:
-                return True
-            
-            # Also check for variations (sometimes OCR might have issues)
-            variations = [
-                r'this\s+page\s+intentionally\s+left\s+blank',
-                r'page\s+intentionally\s+left\s+blank',
-                r'intentionally\s+left\s+blank'
-            ]
-            
-            for pattern in variations:
-                if re.search(pattern, cleaned_text, re.IGNORECASE):
-                    return True
-        
-        return False
-    except Exception as e:
-        print(f"Warning: Could not extract text from page: {e}")
-        return False
-
 def split_by_headers(input_path, output_dir):
     with open(input_path, 'rb') as file:
         pdf_reader = PyPDF2.PdfReader(file)
@@ -50,34 +23,11 @@ def split_by_headers(input_path, output_dir):
     return delimiter_positions
 
 def split_pdf_by_intentionally_blank_pages(input_path, output_dir):
-    """
-    Split PDF into chapters based on pages that say "This page intentionally left blank".
-    The page BEFORE each blank page becomes the FIRST page of a new chapter.
-    Blank pages themselves are NOT included in any chapter.
-    """
     # Create output directory if it doesn't exist
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     
-    # Open the PDF
-    with open(input_path, 'rb') as file:
-        pdf_reader = PyPDF2.PdfReader(file)
-        total_pages = len(pdf_reader.pages)
-        
-        print(f"Total pages in PDF: {total_pages}")
-        print("-" * 70)
-        
-        # First, identify all delimiter pages
-        delimiter_positions = []
-        for page_num in range(total_pages):
-            page = pdf_reader.pages[page_num]
-            if is_intentionally_blank_page(page):
-                delimiter_positions.append(page_num)
-                print(f"✓ Found delimiter page at position {page_num + 1}: 'This page intentionally left blank'")
-        
-        if not delimiter_positions or True:
-            print("No delimiter pages found. The entire PDF will be treated as one chapter.")
-            #chapters = [{'pages': list(range(total_pages)), 'chapter_num': 1}]
-            delimiter_positions = split_by_headers(input_path, output_dir)
+    if True:
+        delimiter_positions = split_by_headers(input_path, output_dir)
         # Find all pages that are BEFORE a blank page (these will be chapter starts)
         chapter_start_pages = []
         for delim_pos in delimiter_positions:
