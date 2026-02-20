@@ -42,7 +42,7 @@ def split_by_headers(input_path, output_dir):
             text = page.extract_text()
             if oldtext == None:
                 delimiter_positions.append(page_num + 1)    
-            if re.match(r"[A-Za-z]", oldtext.split()[0]) != re.match(r"[A-Za-z]", text.split()[0]):
+            elif re.match(r"[A-Za-z]", oldtext.split()[0]) != re.match(r"[A-Za-z]", text.split()[0]):
                 delimiter_positions.append(page_num + 1)    
     return delimiter_positions
 
