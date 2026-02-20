@@ -33,6 +33,7 @@ def is_intentionally_blank_page(page):
 def split_by_headers(input_path, output_dir):
     with open(input_path, 'rb') as file:
         pdf_reader = PyPDF2.PdfReader(file)
+        total_pages = len(pdf_reader.pages)
         delimiter_positions = []
         text = None
         for page_num in range(total_pages - 1):
