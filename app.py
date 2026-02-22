@@ -15,7 +15,7 @@ def split_by_headers(input_path, output_dir):
             text = page.extract_text()
             if text:
                 first_line = text.split('\n')[0] if '\n' in text else text
-                if re.search(r'^\d$', first_line.strip()) or re.search(r'^I[0I2-5]?$', first_line.strip()):
+                if re.search(r'^\d$', first_line.strip()) or re.search(r'^|[0|2-5]?$', first_line.strip()):
                     delimiter_positions.append(page_num)
         if total_pages > 0:
             delimiter_positions.append(total_pages)
