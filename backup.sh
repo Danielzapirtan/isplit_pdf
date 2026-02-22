@@ -3,6 +3,8 @@
 cd /content/drive/MyDrive/
 DATE=$(date +6%m%d_%H%M)
 PROJECT=split_chapters
-sync
-zip $PROJECT
-mv -f $PROJECT.zip $PROJECT_$DATE.zip
+echo "Compressing ... please wait"
+sleep 20
+tar -C . -czf $PROJECT_$DATE.gz $PROJECT
+sleep 20
+rm $PROJECT
