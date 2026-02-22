@@ -7,4 +7,4 @@ echo "Compressing ... please wait"
 wait
 tar -C . -czf ${PROJECT}_$DATE.gz $PROJECT
 sleep 20
-rm $PROJECT
+rm -rf $PROJECT
