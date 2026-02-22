@@ -35,6 +35,25 @@ def main():
     print(f"📂 Input file: {input_path}")
     print(f"📂 Output directory: {output_dir}")
     print("=" * 70)
+    os.makedirs(output_dir, exist_ok=True)
+    delimiter_positions = split_by_headers(input_path, output_dir)
+    with open(input_path, 'rb') as file:
+        pdf_reader = PyPDF2.PdfReader(file)
+        total_pages = len(pdf_reader.pages)
+        for i in range(len(delimiter_positions) - 1):
+            start_page = delimiter_positions[i]
+            end_page = delimiter_positions[i + 1]
+            pdf_writer = PyPDF2.PdfWriter()
+            for page_num in range(start_page, end_page):
+                pdf_writer.add_page(pdf_reader.pages[page_num])
+            output_filename = f"chapter_{i+1:03d}_pages_{start_page+1:03d}_to_{end_page:03d}.pdf"
+            output_path = os.path.join(output_dir, output_filename)
+            with open(output_path, 'wb') as output_file:
+                pdf_writer.write(output_file)
+            print(f"✅ Created: {output_filename} (pages {start_page+1}-{end_page})")
+    print("=" * 70)
+    print(f"🎉 Successfully split PDF into {len(delimiter_positions)-1} chapters!")
+    print("=" * 70)
 
 if __name__ == "__main__":
     total_pages = 0
