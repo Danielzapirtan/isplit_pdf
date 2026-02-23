@@ -13,6 +13,8 @@ def split_by_headers(input_path, output_dir):
         for page_num in range(total_pages - 1):
             page = pdf_reader.pages[page_num]
             text = page.extract_text()
+            if page_num == 347:
+                delimiter_positions.append(page_num)
             if text:
                 first_line = text.split('\n')[0] if '\n' in text else text
                 if re.search(r'^\d+$', first_line.strip()) or re.search(r'^Chapter\s+\d+\.', first_line.strip()):
