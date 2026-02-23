@@ -27,7 +27,8 @@ def split_by_headers(input_path, output_dir):
         if total_pages > 0:
             delimiter_positions.append(total_pages)
         delimiter_positions = sorted(set(delimiter_positions))
-    return delimiter_positions
+    dp = delimiter_positions
+    return [dp[0], dp[2], dp[3], dp[4], dp[5], dp[7], dp[8]]
 
 def main():
     input_path = '/content/drive/MyDrive/input.pdf'
