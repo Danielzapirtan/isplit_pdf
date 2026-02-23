@@ -8,6 +8,6 @@ wait
 tar -C . -czf ${PROJECT}_$DATE.tar.gz $PROJECT
 sleep 20
 wait
-rm -rf $PROJECT
+#rm -rf $PROJECT
 echo "Compressed ok"
 echo "Open Google Drive and download ${PROJECT}_$DATE.tar.gz"
