@@ -15,8 +15,6 @@ def split_by_headers(input_path, output_dir):
             text = page.extract_text()
             if text:
                 first_line = text.split('\n')[0] if '\n' in text else text
-                if first_line == '':
-                    first_line = text.split('\n')[1]
                 if re.search(r'^\d+$', first_line.strip()) or re.search(r'^Chapter\s+\d+\.', first_line.strip()):
                     delimiter_positions.append(page_num)
             if text:
