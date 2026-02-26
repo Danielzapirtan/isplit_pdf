@@ -20,7 +20,7 @@ def split_by_headers(input_path, output_dir):
             if text:
                 lines = text.split("\n")
                 for line in lines:
-                    if re.search(r'\d+\s+-\s+', line):
+                    if re.search(r'^\d+\s+-\s+', line):
                         delimiter_positions.append(page_num)
         if total_pages > 0:
             delimiter_positions.append(total_pages)
