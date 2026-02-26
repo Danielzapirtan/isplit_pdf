@@ -31,7 +31,7 @@ def split_by_headers(input_path, output_dir):
     return dp2
 
 def main():
-    input_path = '/content/drive/MyDrive/boox/DSD.pdf'
+    input_path = '/content/drive/MyDrive/boox/ABC.pdf'
     output_dir = '/content/drive/MyDrive/split_chapters'
     if not os.path.exists(input_path):
         print(f"❌ Error: Input file not found at {input_path}")
